@@ -1,0 +1,8 @@
+This project contains
+
+ - A stand-alone tool to convert the Wikipedia article dump (as XML) into multiple
+   text files, each consisting of one <page>xxxx</page> record per line. This is
+   then suitable for input to Hadoop.
+ - A Hadoop-based workflow that processes the dump, extracts ngrams, and
+   generates counts.
+
