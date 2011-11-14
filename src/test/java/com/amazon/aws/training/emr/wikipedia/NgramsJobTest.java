@@ -1,20 +1,20 @@
-package com.scaleunlimited.wikipedia;
+package com.amazon.aws.training.emr.wikipedia;
 
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
-import cascading.flow.Flow;
+import com.scaleunlimited.wikipedia.SplitXmlTool;
 
 
-public class ProcessXmlToolTest {
+public class NgramsJobTest {
 
     @Test
-    public void testProcessing() throws Exception {
+    public void testProcessingWithHadoop() throws Exception {
         
         // First split some data.
-        File outputDir = new File("build/test/ProcessXmlToolTest/in");
+        File outputDir = new File("build/test/NgramsJobTest/in");
         FileUtils.deleteDirectory(outputDir);
         outputDir.mkdirs();
         
@@ -22,12 +22,11 @@ public class ProcessXmlToolTest {
         splittingTool.run("src/test/resources/enwiki-snippet.xml", outputDir.getAbsolutePath());
 
         // Now process that XML
-        ProcessXmlTool processingTool = new ProcessXmlTool();
-        ProcessXmlOptions processingOptions = new ProcessXmlOptions();
+        NgramsJob job = new NgramsJob();
+        NgramsJobOptions processingOptions = new NgramsJobOptions();
         processingOptions.setInputFile(outputDir.getAbsolutePath());
-        processingOptions.setOutputDir("build/test/ProcessXmlToolTest/out");
-        Flow flow = processingTool.createFlow(processingOptions);
-        flow.complete();
+        processingOptions.setOutputDir("build/test/NgramsJobTest/out");
+        job.run(processingOptions, false);
         
         // Verify the results
         // TODO KKr - make it so

@@ -167,7 +167,11 @@ public class NgramsJob {
     }
     
     public void run(NgramsJobOptions options, boolean printConfig) throws IOException {
-        
+        // Avoid having Hadoop wind up trying to use the Jaxen parser, which will
+        // trigger exceptions that look like "Failed to set setXIncludeAware(true) for parser blah"
+        System.setProperty("javax.xml.parsers.DocumentBuilderFactory",
+                           "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
+
         try {
             generateNgrams(options, printConfig);
         } catch (Exception e) {
