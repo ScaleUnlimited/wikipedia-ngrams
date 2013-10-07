@@ -19,7 +19,7 @@ public class ProcessXmlToolTest {
         outputDir.mkdirs();
         
         SplitXmlTool splittingTool = new SplitXmlTool(5);
-        splittingTool.run("src/test/resources/enwiki-snippet.xml", outputDir.getAbsolutePath());
+        splittingTool.run("src/test/resources/enwiki-snippet.xml", outputDir.getAbsolutePath(), false);
 
         // Now process that XML
         ProcessXmlTool processingTool = new ProcessXmlTool();

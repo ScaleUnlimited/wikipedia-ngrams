@@ -5,7 +5,9 @@ import org.apache.commons.lang.builder.ToStringStyle;
 import org.kohsuke.args4j.Option;
 
 public class SplitXmlOptions {
-    private boolean _debug;
+    private boolean _debug = false;
+    private boolean _jsonOuptut = false;
+
     private String _inputFile;
     private String _outputDir;
     
@@ -14,24 +16,33 @@ public class SplitXmlOptions {
         _debug = debug;
     }
 
+    public boolean isDebugLogging() {
+        return _debug;
+    }
+    
+    @Option(name = "-json", usage = "generate JSON", required = false)
+    public void setJsonOutput(boolean jsonOutput) {
+        _jsonOuptut = jsonOutput;
+    }
+    
+    public boolean isJsonOutput() {
+        return _jsonOuptut;
+    }
+
     @Option(name = "-inputfile", usage = "path to Wikipedia dump file", required = true)
     public void setInputFile(String inputFile) {
         _inputFile = inputFile;
     }
 
+    public String getInputFile() {
+        return _inputFile;
+    }
+    
     @Option(name = "-outputdir", usage = "path to directory for results", required = true)
     public void setOutputDir(String outputDir) {
         _outputDir = outputDir;
     }
 
-    public boolean isDebugLogging() {
-        return _debug;
-    }
-    
-    public String getInputFile() {
-        return _inputFile;
-    }
-    
     public String getOutputDir() {
         return _outputDir;
     }

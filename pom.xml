@@ -7,7 +7,7 @@
 	<artifactId>wikipedia-ngrams</artifactId>
 	<name>Wikipedia processing code for Amazon training</name>
 	<packaging>jar</packaging>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.0</version>
 	
 	<repositories>
 		<repository>
@@ -15,18 +15,20 @@
 			<name>Cascading repository</name>
 			<url>http://conjars.org/repo/</url>
 		</repository>
+        
 		<repository>
 		    <id>bixolabs</id>
 		    <name>Bixo Labs Maven2 Repository</name>
 		    <url>http://bixolabs.github.com/repo/</url>
 		</repository>
+        
 	</repositories>
 	
 	<dependencies>
 		<dependency>
-            <groupId>org.kohsuke</groupId>
+            <groupId>args4j</groupId>
             <artifactId>args4j</artifactId>
-            <version>2.0.10</version>
+            <version>2.0.18</version>
         </dependency>
 	
         <dependency>
@@ -38,7 +40,7 @@
 		<dependency>
 			<groupId>com.bixolabs</groupId>
 			<artifactId>cascading.utils</artifactId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 
         <dependency>
@@ -52,9 +54,29 @@
             <artifactId>jaxen</artifactId>
             <version>1.1.1</version>
             <scope>runtime</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
+        <!-- We exclude xerces above, so we can make it a provided dependency here -->
 		<dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <version>2.6.2</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-lgpl</artifactId>
+            <version>1.3.0</version>
+        </dependency>
+        
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.14</version>
@@ -65,6 +87,13 @@
             <artifactId>hadoop-core</artifactId>
             <version>0.20.2</version>
             <scope>provided</scope>
+            <exclusions>
+                <!-- We don't need ant (only for JSPs), and it causes the build to generate a warning -->
+                <exclusion>
+                    <groupId>ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
 		<dependency>
@@ -78,6 +107,13 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>1.8.0</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-jsonic</artifactId>
+            <version>3.5.0</version>
             <scope>test</scope>
         </dependency>
         

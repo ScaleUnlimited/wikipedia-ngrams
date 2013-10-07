@@ -8,9 +8,6 @@ All rights reserved.
 
     <property name="root.dir" value="${basedir}" />
     <property file="${root.dir}/build.properties" />
-    <property file="${root.dir}/my.properties" />
-
-    <fail unless="hadoop.home">The "hadoop.home" property must be set on the command line or in my.properties!</fail>
     
     <!-- ================================================================== -->
     <!-- General cleaning sources                                           -->
@@ -69,6 +66,7 @@ All rights reserved.
                optimize="${javac.optimize}"
                target="${javac.version}"
                source="${javac.version}"
+		       includeAntRuntime="false"
                deprecation="${javac.deprecation}">
             <compilerarg line="${javac.args} ${javac.args.warnings}" />
             <classpath refid="compile.classpath" />
@@ -95,6 +93,7 @@ All rights reserved.
                optimize="${javac.optimize}"
                target="${javac.version}"
                source="${javac.version}"
+		       includeAntRuntime="false"
                deprecation="${javac.deprecation}">
             <compilerarg line="${javac.args} ${javac.args.warnings}" />
             <classpath refid="test.classpath" />
@@ -136,6 +135,42 @@ All rights reserved.
         <fail if="tests.failed">Tests failed!</fail>
     </target>
 
+    <!-- ================================================================== -->
+    <!-- Splitter jar                                                       -->
+    <!-- ================================================================== -->
+
+    <target name="jar"
+            depends="compile"
+            description="--> create a combo jar with all dependencies">
+
+        <!-- Make sure lib/ dir starts out empty, so we don't get multiple
+		     copies of jars with slightly different versions
+		 -->
+        <delete dir="${build.dir}/lib" />
+        <mkdir dir="${build.dir}/lib" />
+
+        <copy todir="${build.dir}/lib" flatten="true">
+            <path refid="runtime.classpath" />
+        </copy>
+
+        <jar jarfile="${build.dir}/external-libs.jar">
+            <zipgroupfileset dir="${build.dir}/lib" includes="*.jar" />
+        </jar>
+
+        <jar destfile="${build.dir}/${jar.name}" compress="true">
+            <zipfileset src="${build.dir}/external-libs.jar">
+              <exclude name="META-INF/**"/>
+            </zipfileset>
+
+            <fileset dir="${build.dir.main-classes}" />
+            <fileset dir="${main.res.dir}" />
+            
+            <manifest>
+              <attribute name="Main-Class" value="com.scaleunlimited.wikipedia.SplitXmlTool"/>
+            </manifest>
+        </jar>
+        
+    </target>
 
     <!-- ================================================================== -->
     <!-- Hadoop job jar                                                     -->
@@ -161,11 +196,75 @@ All rights reserved.
             <fileset dir="${build.dir}" includes="lib/" />
             
             <manifest>
-              <attribute name="Main-Class" value="com.amazon.aws.training.emr.wikipedia.NgramJob"/>
+              <attribute name="Main-Class" value="com.amazon.aws.training.emr.wikipedia.NgramsJob"/>
             </manifest>
 
         </jar>
     </target>
+
+
+	<!-- ================================================================== -->
+	<!-- Generate a distribution                                            -->
+	<!-- ================================================================== -->
+
+	<target name="dist"
+		    depends="test, jar"
+	        description="--> create a tarball distribution">
+
+		<delete dir="${build.dir.dist}" />
+
+		<!-- create target directory -->
+		<mkdir dir="${build.dir.dist}" />
+		<mkdir dir="${build.dir.dist}/doc" />
+		<mkdir dir="${build.dir.dist}/lib" />
+		<mkdir dir="${build.dir.dist}/src" />
+
+		<!-- copy libs -->
+		<copy todir="${build.dir.dist}/lib" flatten="true">
+			<fileset dir="${basedir}/lib" />
+		</copy>
+		
+		<!-- copy src -->
+		<copy todir="${build.dir.dist}/src">
+			<fileset dir="${basedir}/src" />
+		</copy>
+		
+		<!-- copy documents -->
+		<copy todir="${build.dir.dist}">
+			<fileset file="${basedir}/README" />
+		</copy>
+		<copy todir="${build.dir.dist}">
+			<fileset file="${basedir}/README-Splitting" />
+		</copy>
+		<copy todir="${build.dir.dist}/doc">
+			<fileset file="${basedir}/doc/eclipse-formatter.properties" />
+		</copy>
+		
+		<!-- copy the build file -->
+		<copy todir="${build.dir.dist}">
+			<fileset file="${basedir}/build.xml" />
+		</copy>
+
+		<!-- copy the build properties -->
+		<copy todir="${build.dir.dist}">
+			<fileset file="${basedir}/build.properties" />
+		</copy>
+
+		<!-- copy the pom file -->
+		<copy todir="${build.dir.dist}">
+			<fileset file="${basedir}/pom.xml" />
+		</copy>
+
+		<tar longfile="gnu" compression="gzip" destfile="${build.release.file}">
+			<tarfileset dir="${build.dir.dist}">
+			    <include name="**" />
+			    <exclude name="bin/*" />
+			</tarfileset>
+			<tarfileset dir="${build.dir.dist}" mode="755">
+			    <include name="bin/*" />
+			</tarfileset>
+		</tar>
+	</target>
 
 
     <!-- ================================================================== -->

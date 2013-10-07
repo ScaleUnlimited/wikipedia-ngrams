@@ -4,8 +4,8 @@
 .settings/
 build
 target
+test
 build-eclipse
 *.dot
 *.hprof
 junit*.properties
-

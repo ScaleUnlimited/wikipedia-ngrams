@@ -6,12 +6,12 @@
 
 package com.amazon.aws.training.emr.wikipedia;
 
+import java.io.IOException;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.lib.IdentityMapper;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -20,12 +20,10 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
-import java.io.IOException;
-
 public class NgramsJob {
 
-    private static final String RAW_SUBDIR_NAME = "raw-counts";
-    private static final String SORTED_SUBDIR_NAME = "sorted-counts";
+    public static final String RAW_SUBDIR_NAME = "raw-counts";
+    public static final String SORTED_SUBDIR_NAME = "sorted-counts";
     
     private void generateNgrams(NgramsJobOptions options, boolean printConfig) throws IOException, ClassNotFoundException, InterruptedException {
         // create Hadoop path instances
@@ -36,6 +34,10 @@ public class NgramsJob {
         // Create the job configuration
         Configuration conf = new Configuration();
 
+        // Pass in our custom options.
+        conf.setInt(NgramsMapper.NGRAM_SIZE_KEY, options.getNgramSize());
+        conf.setFloat(NgramsMapper.PAGE_PERCENT, options.getPercent());
+        
         // get the FileSystem instances for each path
         // this allows for the paths to live on different FileSystems (local, hdfs, s3, etc)
         FileSystem inputFS = inputPath.getFileSystem(conf);
@@ -65,27 +67,20 @@ public class NgramsJob {
 
         // our mapper class
         job.setMapperClass(NgramsMapper.class);
-        job.setMapOutputKeyClass(ThreeGram.class);
+        job.setMapOutputKeyClass(Ngram.class);
         job.setMapOutputValueClass(LongWritable.class);
 
         // our reducer class
         job.setReducerClass(NgramReducer.class);
         job.setOutputKeyClass(LongWritable.class);
-        job.setOutputValueClass(ThreeGram.class);
+        job.setOutputValueClass(Ngram.class);
         
-        // The default number of reducer tasks (slots) is set in mapred-default.xml,
-        // and optionally customized in mapred-site.xml. It's possible to override
-        // this on a per-job basis.
-        if (options.getNumReducers() != NgramsJobOptions.DEFAULT_REDUCERS) {
-            job.setNumReduceTasks(options.getNumReducers());
-        }
-
         if (printConfig) {
             System.out.println("starting wikipedia-ngrams job using:");
             System.out.println(" jobtracker    = " + job.getConfiguration().get("mapred.job.tracker"));
             System.out.println(" inputPath     = " + inputPath.makeQualified(inputFS));
             System.out.println(" outputPath    = " + tempDirPath.makeQualified(outputFS));
-            System.out.println(" num reducers  = " + job.getNumReduceTasks());
+            System.out.println(" ngram size    = " + options.getNgramSize());
             System.out.println(" comparator    = " + job.getSortComparator().getClass().getName());
             System.out.println(" mapper class  = " + job.getMapperClass());
             System.out.println(" reducer class = " + job.getReducerClass());
@@ -135,7 +130,7 @@ public class NgramsJob {
         // We don't specify a mapper, which means it's the identity mapper.
         // But we do have to specify the classes for key/value
         job.setMapOutputKeyClass(LongWritable.class);
-        job.setMapOutputValueClass(ThreeGram.class);
+        job.setMapOutputValueClass(Ngram.class);
         
         // our reducer class
         job.setReducerClass(SortingReducer.class);
@@ -146,9 +141,7 @@ public class NgramsJob {
         // The default number of reducer tasks (slots) is set in mapred-default.xml,
         // and optionally customized in mapred-site.xml. It's possible to override
         // this on a per-job basis.
-        if (options.getNumReducers() != NgramsJobOptions.DEFAULT_REDUCERS) {
-            job.setNumReduceTasks(options.getNumReducers());
-        }
+        job.setNumReduceTasks(options.getNumReducers());
 
         if (printConfig) {
             System.out.println("starting wikipedia-ngrams job using:");
@@ -195,6 +188,11 @@ public class NgramsJob {
     }
 
     public static void main(String[] args) throws IOException {
+        // Avoid having Hadoop wind up trying to use the Jaxen parser, which will
+        // trigger exceptions that look like "Failed to set setXIncludeAware(true) for parser blah"
+        System.setProperty("javax.xml.parsers.DocumentBuilderFactory",
+                           "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
+
         NgramsJobOptions options = new NgramsJobOptions();
         CmdLineParser parser = new CmdLineParser(options);
 

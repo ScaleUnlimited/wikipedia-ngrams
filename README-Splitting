@@ -1,0 +1,87 @@
+======================================================
+Splitting the Wikipedia data
+======================================================
+
+These instructions are for building your own version of
+the Wikipedia split dataset. The input to this tool is
+the (very large) XML file you get from downloading the
+Wikipedia articles dump. The result is 117 XML files,
+where each page from Wikipedia is a separate line of text.
+
+This makes the resulting files suitable for input to
+Hadoop jobs, since they are splittable on line boundaries.
+
+Note that if you are running wikitext on the text in your
+Hadoop job, you will need to alter the splitting code to
+replace newlines with a special character, which you then
+turn back into newlines in the Hadoop map function. This
+is required because wikitext is sensitive to newlines. If
+all you are doing is processing the raw markup, then this
+extra step is not required.
+
+1. Launch an EC2 instance, for example m1.large
+
+  Make sure you download the keypair you used, and you have
+  it stored with appropriate access permissions.
+
+2. Get the articles dump from Wikipedia
+
+   [on your dev machine]
+
+   % ssh -i <path to keypair file> root@<public ip address for EC2 instance>
+
+   [on the EC2 server]
+
+   % cd /mnt/
+   % mkdir wikipedia
+   % cd wikipedia
+   % wget "http://download.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2"
+
+   Note that you need to use the /mnt drive (not your home directory), as the home directory
+   in EC2 is often located on a very small partition.
+
+3. Expand the articles dump
+
+   % bunzip2 enwiki-latest-pages-articles.xml.bz2
+   
+   [This will take a while]
+
+4. Build the splitting jar on your dev machine
+
+   % ant clean jar
+
+5. Download the s3cmd tool
+
+   http://sourceforge.net/projects/s3tools/files/latest/download?source=files
+
+6. Push the jar and s3cmd tool to the instance
+
+   [on your dev machine]
+
+   % scp -i <path to keypair file> build/wikipedia-splitter.jar \
+     root@<public ip address for EC2 instance>:/mnt/wikipedia/wikipedia-splitter.jar
+
+   % scp -i <path to keypair file> bin/s3cmd-1.0.1.tar.gz \
+     root@<public ip address for EC2 instance>:/mnt/wikipedia/s3cmd-1.0.1.tar.gz
+   
+7. Back on the EC2 instance, run the tool
+
+   % mkdir wiki-parts
+   % java -cp wikipedia-splitter.jar -inputfile enwiki-latest-pages-articles.xml -outputdir wiki-parts
+
+   [this will take about 25 minutes on an m1.large instance]
+
+8. Install and configure the s3cmd tool
+
+   % tar xzvf s3cmd-1.0.1.tar.gz
+   % s3cmd-1.0.1/s3cmd --configure
+
+   [enter your AWS credentials, as prompted. Don't worry about encryption]
+
+8. Copy the split files up to S3
+
+   % s3cmd-1.0.1/s3cmd put -r wiki-parts s3://<bucket>/
+
+   [This will take a while too. You can run run the s3cmd tool with -rn
+    initially to verify the appropriate files are being copied to the right locations]
+
